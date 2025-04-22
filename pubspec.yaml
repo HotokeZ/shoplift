@@ -1,0 +1,58 @@
+name: shoplift
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  google_fonts: ^4.0.3 # Use the latest version available
+  flutter_svg: ^2.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+
+flutter:
+  assets:
+      - assets/fonts/fonts/
+
+  uses-material-design: true
+
+  fonts:
+    - family: Kalam
+      fonts:
+        - asset: assets/fonts/fonts/kalam-Light.ttf
+          weight: 300
+        - asset: assets/fonts/fonts/kalam-bold.ttf
+          weight: 700
+
+    - family: Gabarito
+      fonts:
+        - asset: assets/fonts/fonts/Gabarito-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/fonts/Gabarito-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/fonts/Gabarito-Bold.ttf
+          weight: 700
+
+    - family: CircularStd
+      fonts:
+        - asset: assets/fonts/fonts/CircularStd-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/fonts/CircularStd-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/fonts/CircularStd-Bold.ttf
+          weight: 700
+
