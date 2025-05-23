@@ -1,6 +1,5 @@
-
 import 'package:flutter/material.dart';
-import 'gender_selector.dart';
+import '../widgets/gender_selector.dart';
 
 Future<void> showGenderSelector(
   BuildContext context, {
@@ -14,21 +13,23 @@ Future<void> showGenderSelector(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => GenderSelector(
-        onClose: () => Navigator.pop(context),
-        onSelect: onSelect,
-      ),
+      builder:
+          (context) => GenderSelectionModal(
+            onClose: () => Navigator.pop(context),
+            onSelect: onSelect,
+          ),
     );
   } else {
     await showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GenderSelector(
-          onClose: () => Navigator.pop(context),
-          onSelect: onSelect,
-        ),
-      ),
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: GenderSelectionModal(
+              onClose: () => Navigator.pop(context),
+              onSelect: onSelect,
+            ),
+          ),
     );
   }
 }

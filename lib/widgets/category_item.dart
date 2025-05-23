@@ -4,65 +4,41 @@ import '../utils/app_styles.dart';
 
 class CategoryItem extends StatefulWidget {
   final String title;
-  final String imageUrl;
+  final String? imageUrl; // Make imageUrl optional
 
   const CategoryItem({
-    super.key,
+    Key? key,
     required this.title,
-    required this.imageUrl,
-  });
+    this.imageUrl, // Optional parameter
+  }) : super(key: key);
 
   @override
-  State<CategoryItem> createState() => _CategoryItemState();
+  _CategoryItemState createState() => _CategoryItemState();
 }
 
 class _CategoryItemState extends State<CategoryItem> {
-  bool isHovered = false;
-
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => isHovered = true),
-      onExit: (_) => setState(() => isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        transform: Matrix4.identity()..scale(isHovered ? 1.02 : 1.0),
-        margin: const EdgeInsets.only(right: 24),
-        child: Column(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.lightGrey,
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: Image.network(
-                  widget.imageUrl,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.lightGrey,
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                    );
-                  },
-                ),
+    return Column(
+      children: [
+        if (widget.imageUrl != null) // Only show the image if imageUrl is provided
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              image: DecorationImage(
+                image: NetworkImage(widget.imageUrl!),
+                fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(height: 5),
-            Text(
-              widget.title,
-              style: AppStyles.categoryItemText,
-            ),
-          ],
+          ),
+        const SizedBox(height: 8),
+        Text(
+          widget.title,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
-      ),
+      ],
     );
   }
 }

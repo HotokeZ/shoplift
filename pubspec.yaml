@@ -4,7 +4,7 @@ description: "A new Flutter project."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+1
+version: 1.0.0-beta+1
 
 environment:
   sdk: ^3.7.2
@@ -12,15 +12,22 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  image_picker: ^0.8.7+4 # Add this line for the image_picker package
+  firebase_auth: ^4.20.0
+  cloud_firestore: ^4.17.5
+  firebase_database: ^10.5.7
+  firebase_storage: ^11.0.16
   cupertino_icons: ^1.0.8
-  google_fonts: ^4.0.3 # Use the latest version available
-  flutter_svg: ^2.0.7
+  flutter_svg: ^2.1.0
+  google_fonts: ^4.0.5
+  email_validator: ^2.1.17
+  image: ^4.0.15
+  http: ^1.3.0
+  photo_view: ^0.14.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
 
 

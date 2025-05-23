@@ -44,17 +44,15 @@ class NotificationScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
-                  CustomButton(
-                    text: 'Explore Categories',
-                    onPressed: () {},
-                  ),
+                  CustomButton(text: 'Explore Categories', onPressed: () {}),
                 ],
               ),
             ),
-            const CustomBottomNavBar(),
-            const SizedBox(height: 20),
           ],
         ),
+      ),
+      bottomNavigationBar: const CustomBottomNavBar(
+        currentIndex: 1 // Index for NotificationsScreen
       ),
     );
   }

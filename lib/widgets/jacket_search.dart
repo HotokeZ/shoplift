@@ -4,12 +4,16 @@ class JacketSearch extends StatelessWidget {
   final String imageUrl;
   final String title;
   final String price;
+  final Widget Function(BuildContext, Object, StackTrace?)? errorBuilder;
+  final Widget favoriteIcon; // Add favoriteIcon parameter
 
   const JacketSearch({
     Key? key,
     required this.imageUrl,
     required this.title,
     required this.price,
+    this.errorBuilder,
+    required this.favoriteIcon, // Add favoriteIcon to constructor
   }) : super(key: key);
 
   @override
@@ -33,15 +37,20 @@ class JacketSearch extends StatelessWidget {
                     imageUrl,
                     width: double.infinity,
                     fit: BoxFit.contain,
+                    errorBuilder:
+                        errorBuilder ??
+                        (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.broken_image,
+                            size: 50,
+                            color: Colors.grey,
+                          );
+                        },
                   ),
                   Positioned(
                     right: 10,
                     top: 5,
-                    child: Image.network(
-                      'https://cdn.builder.io/api/v1/image/assets/TEMP/29644ec814ae1b39fb04d6faf4daa9da217481dd?placeholderIfAbsent=true&apiKey=6802976d0a8e44c6943f4cc155e52295',
-                      width: 24,
-                      height: 24,
-                    ),
+                    child: favoriteIcon, // Use the favoriteIcon here
                   ),
                 ],
               ),

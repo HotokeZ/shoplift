@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "538334935454",
+    "project_id": "shoplift-287c5",
+    "storage_bucket": "shoplift-287c5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:538334935454:android:1d21092df9afa5fa187e8f",
+        "android_client_info": {
+          "package_name": "com.example.shoplift"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkIJIz2656lsBvFUxoSt-gzUvZcx1KWAo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

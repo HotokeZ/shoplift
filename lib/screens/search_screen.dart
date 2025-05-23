@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'jacket_search_screen.dart'; // Import the JacketSearch screen
+import 'home_screen.dart'; // Import the HomeScreen
+import 'item_search_screen.dart'; // Import the JacketSearch screen
 import 'no_result_screen.dart'; // Import the NoResultScreen
 import '../widgets/search_category.dart';
 import '../widgets/sort_dialog.dart';
 import '../widgets/custom_search_bar.dart';
+import '../widgets/bottom_nav_bar.dart'; // Import the CustomBottomNavBar
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Cloud Firestore
+import '../widgets/product_card.dart'; // Import the ProductCard widget
+import 'product_detail_screen.dart'; // Import the ProductDetailScreen
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -19,19 +24,59 @@ class _SearchScreenState extends State<SearchScreen> {
     // Trim excess spaces and convert to lowercase
     final trimmedQuery = query.trim().toLowerCase();
 
-    if (trimmedQuery == 'jacket') {
-      // Navigate to the JacketSearch screen
+    if (trimmedQuery.isNotEmpty) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const JacketSearchScreen()),
-      );
-    } else {
-      // Navigate to the NoResultScreen
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const NoResultScreen()),
+        MaterialPageRoute(
+          builder: (context) => ItemSearchScreen(
+            searchQuery: trimmedQuery,
+            sortBy: 'Latest', // Add default sort value
+          ),
+        ),
       );
     }
+  }
+
+  // Update the StreamBuilder's stream to include category search
+  Stream<QuerySnapshot> _getSearchStream() {
+    if (_searchController.text.isEmpty) {
+      return FirebaseFirestore.instance
+          .collection('products')
+          .orderBy('createdAt', descending: true)
+          .snapshots();
+    }
+
+    final searchQuery = _searchController.text.toLowerCase();
+    
+    // Create the queries for name and categories
+    return FirebaseFirestore.instance
+        .collection('products')
+        .where('name', isGreaterThanOrEqualTo: searchQuery)
+        .where('name', isLessThan: searchQuery + 'z')
+        .snapshots()
+        .asyncMap((nameSnapshot) async {
+          // Get category results
+          final categorySnapshot = await FirebaseFirestore.instance
+              .collection('products')
+              .where('categories', arrayContains: searchQuery)
+              .get();
+          
+          // Combine results and remove duplicates using a Set
+          final Set<DocumentSnapshot> uniqueDocs = {};
+          uniqueDocs.addAll(nameSnapshot.docs);
+          uniqueDocs.addAll(categorySnapshot.docs);
+          
+          final allDocs = uniqueDocs.toList();
+          
+          // Sort the results
+          allDocs.sort((a, b) {
+            final dateA = (a.data() as Map<String, dynamic>)['createdAt'] as Timestamp;
+            final dateB = (b.data() as Map<String, dynamic>)['createdAt'] as Timestamp;
+            return dateB.compareTo(dateA);
+          });
+          
+          return nameSnapshot;
+        });
   }
 
   @override
@@ -39,122 +84,143 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(24, 66, 24, 82),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Replace the existing search bar with CustomSearchBar
-                CustomSearchBar(
-                  searchText: _searchController.text,
-                  onBackPressed: () {
-                    Navigator.pop(context);
-                  },
-                  onClearPressed: () {
-                    _searchController.clear();
-                  },
-                  onSearchChanged: (value) {
-                    _searchController.text = value;
-                  },
-                  onSubmitted: _handleSearch, // Handle search on submit
-                ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CustomSearchBar(
+                    searchText: _searchController.text,
+                    onBackPressed: () {
+                      Navigator.pop(context);
+                    },
+                    onClearPressed: () {
+                      setState(() {
+                        _searchController.clear(); // Only clear the text field
+                      });
+                    },
+                    onSearchChanged: (value) {
+                      _searchController.text = value;
+                    },
+                    onSubmitted: _handleSearch,
+                  ),
+                ],
+              ),
+            ),
+            // Product Grid
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _getSearchStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                SizedBox(height: 34),
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('No products available.'));
+                  }
 
-                // Sort By button
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(16),
-                          ),
+                  final products = snapshot.data!.docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final name = (data['name'] as String? ?? '').toLowerCase();
+                    final categories = (data['categories'] as List<dynamic>?)
+                        ?.map((e) => e.toString().toLowerCase())
+                        .toList() ?? [];
+                    final searchQuery = _searchController.text.toLowerCase();
+                    return name.contains(searchQuery) ||
+                        categories.any((category) => category.contains(searchQuery));
+                  }).toList();
+
+                  // Gather all unique userIds
+                  final userIds = <String>{};
+                  for (var product in products) {
+                    final data = product.data() as Map<String, dynamic>;
+                    final userId = data['userId'] as String?;
+                    if (userId != null) userIds.add(userId);
+                  }
+
+                  if (userIds.isEmpty) {
+                    return const Center(child: Text('No matching products found.'));
+                  }
+
+                  // Fetch ban status for these users
+                  return FutureBuilder<QuerySnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('accounts')
+                        .where(FieldPath.documentId, whereIn: userIds.toList())
+                        .get(),
+                    builder: (context, sellerSnapshot) {
+                      if (sellerSnapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (!sellerSnapshot.hasData) {
+                        return const Center(child: Text('No matching products found.'));
+                      }
+
+                      // Map userId -> isBanned
+                      final bannedMap = <String, bool>{};
+                      for (var doc in sellerSnapshot.data!.docs) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        bannedMap[doc.id] = data['isBanned'] == true;
+                      }
+
+                      // Filter products whose user is not banned
+                      final visibleProducts = products.where((product) {
+                        final data = product.data() as Map<String, dynamic>;
+                        final userId = data['userId'] as String?;
+                        if (userId == null) return false;
+                        return bannedMap.containsKey(userId) && bannedMap[userId] != true;
+                      }).toList();
+
+                      if (visibleProducts.isEmpty) {
+                        return const Center(child: Text('No matching products found.'));
+                      }
+
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.75,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
                         ),
-                        builder:
-                            (context) =>
-                                const SortDialog(), // Show SortDialog widget
+                        itemCount: visibleProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = visibleProducts[index];
+                          final data = product.data() as Map<String, dynamic>;
+
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProductDetailScreen(
+                                    productId: product.id,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: ProductCard(
+                              title: data['name'] ?? 'Unnamed Product',
+                              price: (data['price'] ?? 0.0).toDouble(),
+                              imageUrl: (data['images'] as List<dynamic>?)?.firstOrNull?.toString() ??
+                                  'https://via.placeholder.com/150',
+                            ),
+                          );
+                        },
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF272727),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
-                    ),
-                    child: Text(
-                      'Sort By',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Circular Std',
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 34),
-
-                // Categories title
-                Text(
-                  'Shop by Categories',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontFamily: 'Gabarito',
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF272727),
-                  ),
-                ),
-
-                SizedBox(height: 14),
-
-                // Categories list
-                Column(
-                  children: [
-                    SearchCategory(
-                      imageUrl:
-                          'https://cdn.builder.io/api/v1/image/assets/TEMP/f0df8b04af248364a4ec87d4fc6e224dafe76022?placeholderIfAbsent=true&apiKey=6802976d0a8e44c6943f4cc155e52295',
-                      title: 'Hoodies',
-                    ),
-                    SizedBox(height: 8),
-                    SearchCategory(
-                      imageUrl:
-                          'https://cdn.builder.io/api/v1/image/assets/TEMP/6c6a2a026891b736ab1f8b00c72709560bcb952a?placeholderIfAbsent=true&apiKey=6802976d0a8e44c6943f4cc155e52295',
-                      title: 'Accessories',
-                    ),
-                    SizedBox(height: 8),
-                    SearchCategory(
-                      imageUrl:
-                          'https://cdn.builder.io/api/v1/image/assets/TEMP/6dce91ecf4c052fd192e75c8b551283fc29e2e74?placeholderIfAbsent=true&apiKey=6802976d0a8e44c6943f4cc155e52295',
-                      title: 'Shorts',
-                    ),
-                    SizedBox(height: 8),
-                    SearchCategory(
-                      imageUrl:
-                          'https://cdn.builder.io/api/v1/image/assets/TEMP/5a96a76756b89d9d730c7673d98757bffc491f1c?placeholderIfAbsent=true&apiKey=6802976d0a8e44c6943f4cc155e52295',
-                      title: 'Shoes',
-                    ),
-                    SizedBox(height: 8),
-                    SearchCategory(
-                      imageUrl:
-                          'https://cdn.builder.io/api/v1/image/assets/TEMP/b85156355517af68fe1b2117d564429e59409b9d?placeholderIfAbsent=true&apiKey=6802976d0a8e44c6943f4cc155e52295',
-                      title: 'Bags',
-                    ),
-                  ],
-                ),
-              ],
+                  );
+                },
+              ),
             ),
-          ),
+          ],
         ),
       ),
+      bottomNavigationBar: const CustomBottomNavBar(currentIndex: 2),
     );
   }
 }

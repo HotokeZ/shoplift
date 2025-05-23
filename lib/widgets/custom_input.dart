@@ -1,53 +1,34 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
 
 class CustomInput extends StatelessWidget {
+  final TextEditingController? controller;
   final String placeholder;
   final TextInputType keyboardType;
   final bool obscureText;
+  final String? Function(String?)? validator;
 
   const CustomInput({
-    super.key,
+    Key? key,
+    this.controller,
     required this.placeholder,
     this.keyboardType = TextInputType.text,
     this.obscureText = false,
-  });
+    this.validator,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return TextFormField(
+      controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w400, // Fixed invalid fontWeight
-        color: AppColors.text,
-      ),
+      validator: validator,
       decoration: InputDecoration(
-        filled: true,
-        fillColor: AppColors.inputBackground,
         hintText: placeholder,
-        hintStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w400, // Fixed invalid fontWeight
-          color: AppColors.textLight,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 19,
-        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(8),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide.none,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }
